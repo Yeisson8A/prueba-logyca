@@ -43,7 +43,7 @@ Para ejecutar las pruebas, usar el comando `python -m pytest .`, se puede visual
 ### **Clonar el repositorio**:
 
 ````
-git clone <url-repo>
+git clone https://github.com/Yeisson8A/prueba-logyca.git
 cd prueba-logyca
 ````
 
