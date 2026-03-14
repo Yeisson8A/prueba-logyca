@@ -33,6 +33,14 @@ La API no procesa el archivo. Solo lo sube a Azure y notifica a una cola. Esto p
 - **SQLAlchemy 2.0**: Uso de la versión más reciente para un manejo de transacciones más robusto y tipado estricto.
 - **Pandas 2.2**: Optimización en la manipulación de tipos de datos y compatibilidad con el motor de base de datos.
 
+### **Validación Estructural de Datos (Schema Validation)**
+Antes de aceptar el arhivo a cargar, este paso por una serie de validaciones que van desde la extensión, de igual forma el sistema rechaza archivos:
+
+- Vacíos.
+- Sin encabezados.
+- Con encabezados incompletos **(requeridos: date, product_id, quantity, price)**.
+- Sin al menos una fila de registros para procesar.
+
 ## **Estrategia de Pruebas**
 Se implementó una suite de pruebas unitarias con Pytest logrando una alta cobertura del código:
 

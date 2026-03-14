@@ -1,4 +1,5 @@
 from io import BytesIO
+import io
 from unittest.mock import AsyncMock, MagicMock
 import uuid
 from fastapi.testclient import TestClient
@@ -49,6 +50,90 @@ def test_upload_invalid_mimetype(mock_storage_service):
     
     assert response.status_code == 400
     assert "Tipo de contenido no permitido" in response.json()["detail"]
+
+# Valida error si el archivo no tiene contenido
+def test_upload_empty_csv():
+    files = {"file": ("empty.csv", io.BytesIO(b""), "text/csv")}
+    response = client.post("/upload", files=files)
+    assert response.status_code == 400
+    assert "archivo CSV está vacío" in response.json()["detail"]
+
+# Valida error si faltan columnas requeridas
+def test_upload_missing_headers():
+    # Enviamos solo 'date' y 'price', falta 'product_id' y 'quantity'
+    content = b"date,price\n2026-01-01,10.5"
+    files = {"file": ("bad_headers.csv", io.BytesIO(content), "text/csv")}
+    response = client.post("/upload", files=files)
+    assert response.status_code == 400
+    assert "Faltan columnas" in response.json()["detail"]
+
+# Valida error si tiene encabezados pero está vacío de datos
+def test_upload_no_data_rows():
+    content = b"date,product_id,quantity,price\n"
+    files = {"file": ("only_headers.csv", io.BytesIO(content), "text/csv")}
+    response = client.post("/upload", files=files)
+    assert response.status_code == 400
+    assert "no tiene datos" in response.json()["detail"]
+
+# Valida que se lance una excepción 400 cuando el archivo no contiene una línea de encabezados válida.
+def test_upload_csv_no_headers():
+    # Simulamos un archivo que tiene un salto de línea inicial o solo espacios,
+    # lo cual hace que reader.fieldnames sea None o esté vacío.
+    content = b"\n\n" 
+    
+    files = {
+        "file": ("sin_encabezados.csv", BytesIO(content), "text/csv")
+    }
+    
+    response = client.post("/upload", files=files)
+    
+    # Verificaciones
+    assert response.status_code == 400
+    assert response.json()["detail"] == "El archivo no contiene encabezados"
+
+# Valida el comportamiento cuando el archivo solo tiene espacios en blanco.
+def test_upload_csv_with_whitespace_only():
+    content = b"    "
+    files = {
+        "file": ("blanco.csv", BytesIO(content), "text/csv")
+    }
+    
+    response = client.post("/upload", files=files)
+    
+    assert response.status_code == 400
+    # Dependiendo de tu lógica previa de "archivo vacío", 
+    # podría caer en esta o en la de falta de encabezados.
+    assert "detail" in response.json()
+
+# Valida que se lance un error 400 cuando el archivo no tiene una codificación UTF-8 válida.
+def test_upload_csv_invalid_encoding():
+    # Creamos una secuencia de bytes que rompe el decodificador UTF-8.
+    # El byte 0xff es inválido en el inicio de una secuencia UTF-8.
+    content = b"date,product_id,quantity,price\n2026-01-01,101,2,\xff"
+    
+    files = {
+        "file": ("corrupt_encoding.csv", BytesIO(content), "text/csv")
+    }
+    
+    response = client.post("/upload", files=files)
+    
+    # Verificaciones
+    assert response.status_code == 400
+    assert response.json()["detail"] == "El archivo no tiene una codificación UTF-8 válida"
+
+# Valida el error enviando un archivo codificado en ISO-8859-1 (Latin-1) que contiene caracteres que UTF-8 no puede procesar directamente.
+def test_upload_csv_latin1_encoding():
+    # El caracter 'ñ' en Latin-1 es b'\xf1', lo cual falla en UTF-8.
+    content = "date,producto_id,cantidad,precio\n2026-01-01,Niño,1,10.0".encode("iso-8859-1")
+    
+    files = {
+        "file": ("latin1_file.csv", BytesIO(content), "text/csv")
+    }
+    
+    response = client.post("/upload", files=files)
+    
+    assert response.status_code == 400
+    assert "codificación UTF-8 válida" in response.json()["detail"]
 
 # Prueba que el endpoint devuelve 200 con un UUID válido y existente
 def test_get_status_success(mock_storage_service):
