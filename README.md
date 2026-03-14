@@ -66,6 +66,9 @@ Crea un archivo `.env` basado en el `.env.example` con tus credenciales de Azure
 
 ![alt text](images/API.png)
 
+### **Datos de prueba**:
+Se anexa archivo CSV con datos utilizados para las pruebas de carga, el cual se encuentra en la carpeta `data` en la raiz del proyecto, y tiene como nombre `test_sales.csv`
+
 ### **Ejecutar el Worker**:
 
 `python -m app.workers.worker`
