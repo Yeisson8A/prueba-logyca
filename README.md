@@ -73,7 +73,14 @@ Se anexa archivo CSV con datos utilizados para las pruebas de carga, el cual se 
 
 `python -m app.workers.worker`
 
-## Sistema de Trazabilidad (Logging)
+## **Escalabilidad y Concurrencia**
+
+Aunque el Worker actual procesa los mensajes de forma secuencial para garantizar la estabilidad de la memoria RAM, el sistema está diseñado para escalar de las siguientes formas:
+
+- **Escalamiento Horizontal:** Se pueden desplegar múltiples instancias del Worker en paralelo. Gracias al `visibility_timeout` de Azure Queue Storage, cada instancia procesará mensajes distintos sin duplicidad, permitiendo procesar N archivos simultáneamente.
+- **Control de Recursos:** Al mantener cada Worker como un proceso independiente, evitamos problemas de contención por el GIL de Python y facilitamos el monitoreo de consumo de recursos por contenedor.
+
+## **Sistema de Trazabilidad (Logging)**
 
 El sistema implementa un esquema de logging robusto y estructurado, esencial para el monitoreo de procesos asíncronos y la depuración en entornos de producción.
 
