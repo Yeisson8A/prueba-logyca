@@ -19,6 +19,7 @@ def run_worker():
             data = json.loads(msg.content)
             job_id = data['job_id']
             blob_name = data['blob']
+            print(f"Procesando Job ID: {job_id}")
             
             db = SessionLocal()
             processor = ProcessorService(db)
@@ -29,6 +30,7 @@ def run_worker():
             
             # 2. Procesar e insertar
             processor.process_csv_from_stream(downloader.readall(), job_id)
+            print(f"Procesamiento de Job ID {job_id} finalizado")
             
             # 3. Eliminar mensaje de la cola
             queue_client.delete_message(msg)
