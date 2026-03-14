@@ -11,6 +11,12 @@ El sistema se basa en una arquitectura de capas orientada a microservicios:
 - **Worker Asíncrono**: Procesa los datos en segundo plano utilizando Pandas y SQLAlchemy 2.0.
 - **PostgreSQL**: Base de datos relacional para almacenamiento de ventas y resúmenes.
 
+![alt text](images/Correct_Upload_Service.png)
+![alt text](<images/Search Job Status Service.png>)
+![alt text](images/Execution_Worker.png)
+![alt text](<images/Search Job Status Service (Completed).png>)
+![alt text](images/Table_Sales_With_Data.png)
+
 ## **Decisiones Técnicas y Escalabilidad**
 
 ### **Procesamiento de Millones de Registros**
@@ -108,7 +114,7 @@ Cada entrada de log sigue un estándar estructurado para facilitar su integraci�
 
 ## **Automatización con n8n**
 Se diseñó un workflow en n8n para la generación del resumen diario de ventas.
-Se implementó un flujo de trabajo en **n8n** para la generación del reporte diario de ventas, garantizando que los datos operativos se transformen en información analítica de forma automática. El arhivo `json` correspondiente a este workflow se encuentra en la carpeta `automation` de la raíz del proyecto y tiene como nombre `Sales_Daily_Summary_Workflow.json`.
+Se implementó un flujo de trabajo en **n8n** para la generación del reporte diario de ventas en la tabla `sales_daily_summary`, garantizando que los datos operativos se transformen en información analítica de forma automática. El arhivo `json` correspondiente a este workflow se encuentra en la carpeta `automation` de la raíz del proyecto y tiene como nombre `Sales_Daily_Summary_Workflow.json`.
 
 ![alt text](images/Workflow_N8N.png)
 
@@ -117,6 +123,8 @@ Se implementó un flujo de trabajo en **n8n** para la generación del reporte di
 - **Programación (Cron)**: El flujo se dispara diariamente a medianoche.
 - **Agregación SQL**: Se ejecuta una consulta de agregación sobre la tabla `sales` utilizando la función `SUM()` agrupada por fecha, e insertando los resultados en la tabla `sales_daily_summary`.
 - **Estrategia**: Se utiliza un **Upsert** `(ON CONFLICT)` para permitir la re-ejecución del flujo sin duplicar datos si se cargan archivos nuevos de una fecha ya procesada.
+
+![alt text](images/Table_Sales_Daily_Summary.png)
 
 ### **Importación del Workflow**:
 
