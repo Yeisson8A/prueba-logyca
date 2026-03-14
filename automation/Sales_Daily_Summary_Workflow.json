@@ -1,0 +1,177 @@
+{
+  "name": "Sales_Daily_Summary_Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "8313a0b6-d4c6-47ef-8128-c9687f947f3e",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT CAST(COUNT(*) as INTEGER) as total_records \nFROM sales \nWHERE date = CURRENT_DATE - INTERVAL '1 day';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -32,
+        0
+      ],
+      "id": "162a600f-8f67-4838-b4eb-0ec5b4ff6953",
+      "name": "Count Sales",
+      "credentials": {
+        "postgres": {
+          "id": "NeefIeUfqtBD8UPF",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5cd6d82d-4e83-46fc-86d3-a85e9eb1f572",
+              "leftValue": "={{ $json.total_records }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        176,
+        0
+      ],
+      "id": "fc754627-a63a-43f2-bdfa-943fd1bb3902",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO sales_daily_summary (date, total_sales)\nSELECT \n    date, \n    SUM(total) \nFROM sales \nWHERE date = CURRENT_DATE - INTERVAL '1 day'\nGROUP BY date\nON CONFLICT (date) \nDO UPDATE SET \n    total_sales = EXCLUDED.total_sales,\n    last_updated = NOW();",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        480,
+        -112
+      ],
+      "id": "dcf39768-db95-462b-ac73-1defb61f0371",
+      "name": "Insert Sales Data",
+      "credentials": {
+        "postgres": {
+          "id": "NeefIeUfqtBD8UPF",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "yeisson.ochoa72@gmail.com",
+        "toEmail": "yeisson.ochoa72@gmail.com",
+        "subject": "Reporte Diario de Ventas - Actividad No Detectada",
+        "html": "<h3>Hola,</h3>\n<p>El sistema de automatización de <b>LOGYCA Prueba Técnica</b> informa:</p>\n<div style=\"padding: 10px; border: 1px solid #f44336; background-color: #ffebee;\">\n<strong>Estado:</strong> No se encontraron ventas registradas para procesar en la fecha de ayer.\n</div>\n<p>Por favor, verifique si los archivos fueron cargados correctamente en Azure Storage.</p>\n<p>Saludos,\n\n\nSistema de Monitoreo n8n</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        96
+      ],
+      "id": "21cc5e7a-a4be-4210-afdb-c0c240563a31",
+      "name": "Send an Email",
+      "webhookId": "a27e5d39-1775-4126-80da-cef9c2a1afc1",
+      "credentials": {
+        "smtp": {
+          "id": "xvMbq92Zg5BbFzHw",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Count Sales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count Sales": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Insert Sales Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "47829115-687d-4d3a-a05b-e31a54b8f7ff",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53639aa2e1e119e15c84e4ae1493e76f9ff58e818d1199033510556a3bcbbbc0"
+  },
+  "id": "iHxndMLAMoxPtjzC",
+  "tags": []
+}

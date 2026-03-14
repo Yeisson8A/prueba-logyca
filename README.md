@@ -108,10 +108,55 @@ Cada entrada de log sigue un estándar estructurado para facilitar su integraci�
 
 ## **Automatización con n8n**
 Se diseñó un workflow en n8n para la generación del resumen diario de ventas.
+Se implementó un flujo de trabajo en **n8n** para la generación del reporte diario de ventas, garantizando que los datos operativos se transformen en información analítica de forma automática. El arhivo `json` correspondiente a este workflow se encuentra en la carpeta `automation` de la raíz del proyecto y tiene como nombre `Sales_Daily_Summary_Workflow.json`.
 
-- **Frecuencia**: Cada 24 horas **(Schedule)**.
-- **Lógica**: Realiza una agregación por fecha en la tabla `sales` e inserta los resultados en la tabla `sales_daily_summary`.
+![alt text](images/Workflow_N8N.png)
+
+### **Pasos del Workflow**:
+
+- **Programación (Cron)**: El flujo se dispara diariamente a medianoche.
+- **Agregación SQL**: Se ejecuta una consulta de agregación sobre la tabla `sales` utilizando la función `SUM()` agrupada por fecha, e insertando los resultados en la tabla `sales_daily_summary`.
 - **Estrategia**: Se utiliza un **Upsert** `(ON CONFLICT)` para permitir la re-ejecución del flujo sin duplicar datos si se cargan archivos nuevos de una fecha ya procesada.
+
+### **Importación del Workflow**:
+
+- Localiza el archivo `Sales_Daily_Summary_Workflow.json` en la carpeta `automation` de la raíz del proyecto.
+- En la interfaz de n8n, crea un nuevo flujo.
+- Haz clic en el menú (tres puntos) en la esquina superior derecha y selecciona **"Import from File"**.
+- Selecciona el archivo `.json` mencionado.
+
+### **Configuración de Nodos**:
+Tras importar, se deberán actualizar las siguientes credenciales:
+
+#### **Nodo PostgreSQL**:
+
+- Haz clic en el nodo y selecciona **"Create New Credential"**.
+- Ingresa los datos de conexión al servidor PostgreSQL tal y como se configuraron en el archivo `.env`, indicando:
+    - **Host**: Corresponde al nombre del host del servidor donde se encuentra la base de datos a consultar.
+    - **Base de datos**: Corresponde al nombre de la base de datos a utilizar.
+    - **Usuario**: Corresponde al usuario de conexión al servidor de base de datos, el usuario por defecto de PostgreSQL es `postgres`.
+    - **Contraseña**: Corresponde a la contraseña asociada a dicho usuario para conectarse al servidor de base de datos.
+    - **Puerto**: Corresponde al puerto de conexión del servidor de base de datos, el puerto por defecto de PostgreSQL es `5432`.
+
+#### **Nodo Send Email**:
+
+- Configurar el Host como `smtp.gmail.com` y el puerto `465` correspondiente a **SSL**.
+- Adicional indicar el correo electrónico a utilizar para el envío del correo y su correspondiente contraseña.
+
+**Nota**: En caso de que el correo a utilizar tenga configurado **Verificación en Dos Pasos (2FA)**, será necesario crear una contraseña de aplicación para dicha cuenta de Google, y utilizar dicha contraseña generada en la configuración del envio de correo.
+
+### **Notificaciones y Manejo de Datos Vacíos**:
+El flujo de n8n incluye una etapa de validación de volumen:
+
+- **Validación**: Se verifica la existencia de registros para el periodo antes de intentar la agregación.
+- **Notificación Proactiva**: En caso de detectar un día sin actividad (0 registros), el sistema dispara una alerta vía **Email (SMTP/Gmail)** para informar al equipo operativo, evitando la generación de reportes vacíos y permitiendo verificar si hubo un problema con la carga de archivos. Esto permite diferenciar entre una falla técnica y una simple falta de transacciones, mejorando el tiempo de respuesta operativo.
+
+![alt text](images/Email_No_Data_Sales_Summary.png)
+
+### **Beneficios**:
+
+- **Bajo Consumo de Recursos**: Al delegar la agregación a la base de datos y la orquestación a n8n, liberamos de carga a la API y al Worker.
+- **Integridad**: El uso de transacciones SQL garantiza que el resumen diario siempre refleje el estado actual de las ventas procesadas.
 
 ## **Estructura del Proyecto**
 
@@ -125,6 +170,7 @@ Se diseñó un workflow en n8n para la generación del resumen diario de ventas.
 │   ├── services/    # Lógica de negocio (Storage y Procesamiento)
 │   ├── utils/       # Funciones utilitarias
 │   └── workers/     # Script del proceso asíncrono
+├── automation/      # Workflow de N8N para la generación del resumen de ventas
 ├── data/            # Datos de pruebas utilizados para la carga de información
 ├── tests/           # Suite de pruebas unitarias
 ├── .env.example     # Plantilla de configuración
