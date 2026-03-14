@@ -73,6 +73,32 @@ Se anexa archivo CSV con datos utilizados para las pruebas de carga, el cual se 
 
 `python -m app.workers.worker`
 
+## Sistema de Trazabilidad (Logging)
+
+El sistema implementa un esquema de logging robusto y estructurado, esencial para el monitoreo de procesos asíncronos y la depuración en entornos de producción.
+
+### Arquitectura de Logs
+Se configuró un logger personalizado (`SalesWorker`) que captura eventos en múltiples niveles de severidad, permitiendo una observabilidad completa del ciclo de vida de cada archivo procesado; y dejando trazabilidad en el archivo `worker_activity.log` ubicado en la raíz del proyecto.
+
+- **INFO**: Registra el inicio del worker, la detección de nuevos mensajes en la cola y la confirmación de procesamiento exitoso.
+- **WARNING**: Captura errores recuperables, como fallos temporales de conexión con Azure Queue Storage, activando un mecanismo de reintento automático (`backoff` de 10 segundos).
+- **ERROR**: Registra fallos específicos en un Job **(ej. CSV corrupto o error de esquema)**. El sistema aísla el error, registra el `job_id` afectado y continúa procesando el siguiente mensaje sin detener el servicio.
+- **CRITICAL**: Reporta fallos de infraestructura insalvables **(como credenciales de Azure incorrectas)** que requieren intervención inmediata, deteniendo el worker de forma segura.
+
+### Formato de Salida
+Cada entrada de log sigue un estándar estructurado para facilitar su integración con herramientas de análisis de logs **(como Azure Monitor, ELK Stack o Splunk)**:
+
+`YYYY-MM-DD HH:MM:SS | Nombre_Logger | Nivel | Mensaje`
+
+### Ejemplo de Trazabilidad en Consola
+````
+2026-03-14 14:00:01 | SalesWorker | INFO | Iniciando Worker de Procesamiento de Ventas...
+2026-03-14 14:00:05 | SalesWorker | INFO | Iniciando Job: 7d2f-4a1b | Archivo: ventas_marzo.csv
+2026-03-14 14:00:08 | SalesWorker | ERROR | Error procesando Job 7d2f-4a1b: Formato de fecha inválido.
+2026-03-14 14:00:10 | SalesWorker | INFO | Iniciando Job: 9e1a-2c3d | Archivo: ventas_abril.csv
+2026-03-14 14:00:12 | SalesWorker | INFO | Job 9e1a-2c3d completado con éxito.
+````
+
 ## **Automatización con n8n**
 Se diseñó un workflow en n8n para la generación del resumen diario de ventas.
 
@@ -87,9 +113,12 @@ Se diseñó un workflow en n8n para la generación del resumen diario de ventas.
 │   ├── config/      # Configuraciones de DB y Azure
 │   ├── core/        # Modelos de SQLAlchemy
 │   ├── enums/       # Estados de los trabajos
+│   ├── logger/      # Configuración del sistema de trazabilidad
 │   ├── routes/      # Endpoints de la API
 │   ├── services/    # Lógica de negocio (Storage y Procesamiento)
+│   ├── utils/       # Funciones utilitarias
 │   └── workers/     # Script del proceso asíncrono
+├── data/            # Datos de pruebas utilizados para la carga de información
 ├── tests/           # Suite de pruebas unitarias
 ├── .env.example     # Plantilla de configuración
 └── requirements.txt # Dependencias del proyecto
