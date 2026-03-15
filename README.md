@@ -2,6 +2,8 @@
 
 Este proyecto implementa un sistema escalable y asíncrono para la carga masiva de datos de ventas, procesamiento en la nube (Azure) y automatización de reportes diarios.
 
+![alt text](<images/Diagrama Prueba Técnica Logyca.png>)
+
 ## **Arquitectura del Sistema**
 El sistema se basa en una arquitectura de capas orientada a microservicios:
 
